@@ -21,22 +21,26 @@ func PullImageByUrl(imageUrl string) error {
 	return err
 }
 
-func Build(project string, githubRepoName string, commitHash string) {
+func Build(project string, githubRepoName string, commitHash string, buildArgs ...string) {
 
 	fullGcrUrl := fmt.Sprintf("gcr.io/%s/%s:%s", project, githubRepoName, commitHash)
 	localBuiltImagePath := fmt.Sprintf("%s:%s", githubRepoName, commitHash)
 	pullImage := PullImageByUrl(fullGcrUrl)
 
 	if pullImage != nil {
-		buildImage := exec.Command(
-			"docker",
+		args := []string{
 			"build",
-			"-t",
-			localBuiltImagePath,
+			"-t", localBuiltImagePath,
 			"../",
-			"--target",
-			"production",
-		)
+			"--target", "production",
+		}
+
+		// Append build arguments
+		for _, arg := range buildArgs {
+			args = append(args, "--build-arg", arg)
+		}
+
+		buildImage := exec.Command("docker", args...)
 		buildImage.Stdout = os.Stdout
 		buildImage.Stderr = os.Stderr
 		buildImage.Run()
